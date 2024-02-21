@@ -17,9 +17,11 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import java.io.Console;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +40,7 @@ import io.flutter.plugin.common.PluginRegistry;
 
 public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAware, MethodCallHandler, PluginRegistry.RequestPermissionsResultListener, EventChannel.StreamHandler {
     private MethodChannel channel;
-    private Activity activity;
+    private Activity activity = new Activity();
     private BluetoothAdapter bluetoothAdapter;
     private FlutterPluginBinding flutterPluginBinding;
     private Map<String, BluetoothSocket> connectedDevices = new HashMap<>();
@@ -113,9 +115,18 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
     private boolean ensurePermission(boolean request) {
         if (SDK_INT >= Build.VERSION_CODES.M) {
             if (SDK_INT >= 31) {
-                final boolean bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
-                final boolean bluetoothScan = activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
-                final boolean bluetoothConnect = activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+                if (activity == null){return false;}
+                boolean bluetooth =false;
+                boolean bluetoothScan=false;
+                boolean bluetoothConnect=false;
+                try{
+                    bluetooth= activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
+                    bluetoothScan=  activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
+                    bluetoothConnect=  activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;}
+                catch (Exception e){
+
+                }
+
 
                 if (bluetooth && bluetoothScan && bluetoothConnect) {
                     return true;
@@ -124,9 +135,18 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                 if (!request) return false;
                 activity.requestPermissions(new String[]{Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}, 919191);
             } else {
-                boolean bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
-                boolean fineLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                boolean coarseLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                if (activity == null){return false;}
+                boolean bluetooth =false;
+                boolean fineLocation=false;
+                boolean coarseLocation=false;
+                try {
+                    bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
+                    fineLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                    coarseLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                }catch (Exception e){
+
+                }
+
 
                 if (bluetooth && (fineLocation || coarseLocation)) {
                     return true;
@@ -257,27 +277,37 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                                 new Handler(Looper.getMainLooper()).post(() -> channel.invokeMethod("didUpdateState", 2));
                                 updatePrintingProgress(data.length, 0);
 
+                                Log.d("log", "Printing....");
+                                Log.d("log", String.valueOf(data.length));
 
                                 writeStream.write(data);
                                 writeStream.flush();
 
+                                Log.i("log", "Complete printing, sleep");
+                                // waiting for printing completed
+                                Thread.sleep(5000);
+                                Log.i("log", "Complete");
+
+                                writeStream.close();
                                 updatePrintingProgress(data.length, data.length);
 
-                                // waiting for printing completed
-                                Thread.sleep(3000);
-                                writeStream.close();
 
                                 new Handler(Looper.getMainLooper()).post(() -> {
-                                    // COMPLETED
+                                    //
+
                                     channel.invokeMethod("didUpdateState", 3);
 
                                     // DONE
                                     result.success(true);
                                 });
-                            } finally {
+                            } catch (Exception e){  Log.e("blue_print_error", e.getMessage());}
+                            finally {
                                 if (!keepConnected) {
                                     bluetoothSocket.close();
                                 }
+                                BluetoothAdapter.getDefaultAdapter().disable();
+                                Thread.sleep(2000);
+                                BluetoothAdapter.getDefaultAdapter().enable();
                             }
                         } catch (Exception e) {
                             new Handler(Looper.getMainLooper()).post(() -> {

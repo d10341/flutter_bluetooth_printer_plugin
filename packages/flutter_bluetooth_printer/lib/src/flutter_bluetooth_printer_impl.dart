@@ -29,7 +29,7 @@ class FlutterBluetoothPrinter {
 
   static Stream<DiscoveryState> get discovery => _discovery();
 
-  static Future<void> printBytes({
+  static Future printBytes({
     required String address,
     required Uint8List data,
 
@@ -37,15 +37,19 @@ class FlutterBluetoothPrinter {
     required bool keepConnected,
     ProgressCallback? onProgress,
   }) async {
-    await FlutterBluetoothPrinterPlatform.instance.write(
-      address: address,
-      data: data,
-      onProgress: onProgress,
-      keepConnected: keepConnected,
-    );
+    try {
+      await FlutterBluetoothPrinterPlatform.instance.write(
+        address: address,
+        data: data,
+        onProgress: onProgress,
+        keepConnected: keepConnected,
+      );
+    } catch (e) {
+      return e;
+    }
   }
 
-  static Future<void> printImage({
+  static Future printImage({
     required String address,
     required List<int> imageBytes,
     required int imageWidth,
@@ -88,13 +92,17 @@ class FlutterBluetoothPrinter {
       ...generator.emptyLines(addFeeds),
     ];
 
+    // final Directory directory = await getApplicationDocumentsDirectory();
+    // final File file = File('${directory.path}/my_file.jpg');
+    // print(file.path);
+    // file.writeAsBytes(Uint8List.fromList(bytes));
+
     return printBytes(
       keepConnected: keepConnected,
       address: address,
       data: Uint8List.fromList([
         ...generator.reset(),
         ...imageData,
-        ...generator.reset(),
         ...additional,
       ]),
       onProgress: onProgress,

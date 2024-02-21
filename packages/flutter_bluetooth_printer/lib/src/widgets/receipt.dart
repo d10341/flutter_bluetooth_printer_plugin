@@ -28,7 +28,7 @@ class ReceiptController with ChangeNotifier {
     required ReceiptState state,
   }) : _state = state;
 
-  Future<void> print({
+  Future print({
     required String address,
     ProgressCallback? onProgress,
 
@@ -142,7 +142,7 @@ class ReceiptState extends State<Receipt> {
     );
   }
 
-  Future<void> print({
+  Future print({
     required String address,
     ProgressCallback? onProgress,
     int addFeeds = 0,
@@ -166,6 +166,10 @@ class ReceiptState extends State<Receipt> {
       addFeeds: addFeeds,
       useImageRaster: useImageRaster,
       keepConnected: keepConnected,
-    );
+    ).then((value) {
+      if (value is BusyDeviceException) {
+        return 'BusyDevice';
+      }
+    });
   }
 }
