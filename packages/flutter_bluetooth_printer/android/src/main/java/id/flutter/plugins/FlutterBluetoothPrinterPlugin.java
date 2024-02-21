@@ -283,9 +283,12 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                                 writeStream.write(data);
                                 writeStream.flush();
 
+                                writeStream.write(1);
+                                writeStream.flush();
+
                                 Log.i("log", "Complete printing, sleep");
                                 // waiting for printing completed
-                                Thread.sleep(5000);
+                                Thread.sleep(10000);
                                 Log.i("log", "Complete");
 
                                 writeStream.close();
@@ -305,9 +308,6 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                                 if (!keepConnected) {
                                     bluetoothSocket.close();
                                 }
-                                BluetoothAdapter.getDefaultAdapter().disable();
-                                Thread.sleep(2000);
-                                BluetoothAdapter.getDefaultAdapter().enable();
                             }
                         } catch (Exception e) {
                             new Handler(Looper.getMainLooper()).post(() -> {
