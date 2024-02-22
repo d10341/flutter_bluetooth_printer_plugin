@@ -1,4 +1,3 @@
-import os
 import Foundation
 import CoreBluetooth
 
@@ -305,9 +304,8 @@ public class BluetoothPrinterManager {
                 progressBlock?(0, total)
                 
                 self.peripheralDelegate.didWriteData = { (peripheral, error) in
-                    let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "network")
-                    logger.log("Printing....")
-                    logger.log("\(contentData.count)")
+                    debugPrint("Printing....")
+                    debugPrint("\(contentData.count)")
                     
                     
                     if error != nil {
@@ -330,7 +328,7 @@ public class BluetoothPrinterManager {
                     
                     // Wait for delaySeconds seconds to disconnect the printer automatically
                     DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
-                        logger.log("Complete")
+                        debugPrint("Complete")
                         completeBlock?(nil)
                         self.peripheralDelegate.didWriteData = nil
                     }
