@@ -317,9 +317,13 @@ public class BluetoothPrinterManager {
                         }
                         return
                     }
+
+                    let dataLength = contentData.count // Assuming `data` is of type Data or similar
+                    let delaySeconds = Double(ceil(Double(dataLength) / 5.0))
+
                     
                     // Wait for 3 seconds to disconnect the printer automatically
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
                         completeBlock?(nil)
                         self.peripheralDelegate.didWriteData = nil
                     }
