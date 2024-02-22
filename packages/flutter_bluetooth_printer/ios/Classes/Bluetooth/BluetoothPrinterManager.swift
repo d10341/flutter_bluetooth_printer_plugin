@@ -304,16 +304,12 @@ public class BluetoothPrinterManager {
                 progressBlock?(0, total)
                 
                 self.peripheralDelegate.didWriteData = { (peripheral, error) in
-                    debugPrint("Printing....")
-                    debugPrint("\(contentData.count)")
-                    
-                    
                     if error != nil {
-                        offset -= chunkSize                 
+                        offset -= chunkSize
                         offset = task.printNext(offset: offset)
                         return
                     }
-
+                    
                     progressBlock?(offset, total)
                     if (offset < total){
                         if (peripheral.canSendWriteWithoutResponse){
@@ -321,10 +317,12 @@ public class BluetoothPrinterManager {
                         }
                         return
                     }
+                    
 
                     let dataLength = contentData.count // Assuming `data` is of type Data or similar
                     let delaySeconds = Double(ceil(Double(dataLength) / 5000.0))
-                   
+                    debugPrint(delaySeconds)
+
                     
                     // Wait for delaySeconds seconds to disconnect the printer automatically
                     DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
