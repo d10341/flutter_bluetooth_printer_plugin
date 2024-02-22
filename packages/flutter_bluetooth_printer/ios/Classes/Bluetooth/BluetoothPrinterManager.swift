@@ -318,15 +318,10 @@ public class BluetoothPrinterManager {
                         return
                     }
                     
-
-                    let dataLength = contentData.count // Assuming `data` is of type Data or similar
-                    let delaySeconds = Double(ceil(Double(dataLength) / 5000.0))
-                    debugPrint(delaySeconds)
-
-                    
-                    // Wait for delaySeconds seconds to disconnect the printer automatically
-                    DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
+                    // Wait for 5 seconds to disconnect the printer automatically
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                         debugPrint("Complete")
+                        progressBlock?(total+1, total)
                         completeBlock?(nil)
                         self.peripheralDelegate.didWriteData = nil
                     }
@@ -352,9 +347,11 @@ public class BluetoothPrinterManager {
                         offset = task.printNext(offset: offset)
                         return
                     }
-                    
-                    // Wait for 3 seconds to disconnect the printer automatically
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+              
+                    // Wait for 5 seconds to disconnect the printer automatically
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        debugPrint("Complete")
+                        progressBlock?(total+1, total)
                         completeBlock?(nil)
                         self.peripheralDelegate.didWriteData = nil
                     }
