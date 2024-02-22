@@ -1,3 +1,4 @@
+import os
 import Foundation
 import CoreBluetooth
 
@@ -304,12 +305,17 @@ public class BluetoothPrinterManager {
                 progressBlock?(0, total)
                 
                 self.peripheralDelegate.didWriteData = { (peripheral, error) in
+                    let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "network")
+                    logger.log("Printing....")
+                    logger.log("\(contentData.count)")
+                    
+                    
                     if error != nil {
-                        offset -= chunkSize
+                        offset -= chunkSize                 
                         offset = task.printNext(offset: offset)
                         return
                     }
-                    
+
                     progressBlock?(offset, total)
                     if (offset < total){
                         if (peripheral.canSendWriteWithoutResponse){
@@ -319,11 +325,12 @@ public class BluetoothPrinterManager {
                     }
 
                     let dataLength = contentData.count // Assuming `data` is of type Data or similar
-                    let delaySeconds = Double(ceil(Double(dataLength) / 5.0))
-
+                    let delaySeconds = Double(ceil(Double(dataLength) / 5000.0))
+                   
                     
-                    // Wait for 3 seconds to disconnect the printer automatically
+                    // Wait for delaySeconds seconds to disconnect the printer automatically
                     DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
+                        logger.log("Complete")
                         completeBlock?(nil)
                         self.peripheralDelegate.didWriteData = nil
                     }
