@@ -285,7 +285,12 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
 
                                 Log.i("log", "Complete printing, sleep");
                                 // waiting for printing completed
-                                Thread.sleep(Math.round(Math.ceil((double)data.length/(double)5)));
+                                long sleepTime = Math.round(Math.ceil((double)data.length/(double)5));
+                                if(sleepTime < 5000){
+                                    sleepTime = 5000;
+                                }
+
+                                Thread.sleep(sleepTime);
                                 Log.i("log", "Complete");
 
                                 writeStream.close();
