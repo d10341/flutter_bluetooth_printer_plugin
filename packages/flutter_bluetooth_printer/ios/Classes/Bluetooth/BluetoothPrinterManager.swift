@@ -358,8 +358,8 @@ public class BluetoothPrinterManager {
                 }
                 
                 
-                progressBlock?(0, total)
-                offset = task.printNext(offset: offset)
+//                progressBlock?(0, total)
+//                offset = task.printNext(offset: offset)
             }
         
     }
