@@ -113,12 +113,10 @@ class FlutterBluetoothPrinter {
   }
 
   static Future getImage({
-    required String address,
     required List<int> imageBytes,
     required int imageWidth,
     required int imageHeight,
     PaperSize paperSize = PaperSize.mm58,
-    ProgressCallback? onProgress,
     int addFeeds = 0,
     bool useImageRaster = false,
     required bool keepConnected,
