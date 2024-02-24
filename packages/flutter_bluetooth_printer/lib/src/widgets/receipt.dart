@@ -202,9 +202,6 @@ class ReceiptState extends State<Receipt> {
       imageWidth: image.width,
       imageHeight: image.height,
       paperSize: _paperSize,
-      addFeeds: addFeeds,
-      useImageRaster: useImageRaster,
-      keepConnected: keepConnected,
     );
   }
 }

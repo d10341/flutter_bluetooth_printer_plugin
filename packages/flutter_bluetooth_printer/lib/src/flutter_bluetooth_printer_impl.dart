@@ -117,9 +117,6 @@ class FlutterBluetoothPrinter {
     required int imageWidth,
     required int imageHeight,
     PaperSize paperSize = PaperSize.mm58,
-    int addFeeds = 0,
-    bool useImageRaster = false,
-    required bool keepConnected,
   }) async {
     final bytes = await _optimizeImage(
       paperSize: paperSize,
@@ -128,35 +125,13 @@ class FlutterBluetoothPrinter {
       srcHeight: imageHeight,
     );
 
-    img.Image src = img.decodeJpg(Uint8List.fromList(bytes))!;
-
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(
-      paperSize,
-      profile,
-      spaceBetweenRows: 0,
-    );
-    List<int> imageData;
-    if (useImageRaster) {
-      imageData = generator.imageRaster(
-        src,
-        highDensityHorizontal: true,
-        highDensityVertical: true,
-        imageFn: PosImageFn.bitImageRaster,
-        align: PosAlign.left,
-      );
-    } else {
-      imageData = generator.image(src);
-    }
-
-    // Check for access premission
     final hasAccess = await Gal.hasAccess();
 
     if (hasAccess) {
       final hasAccessToAlbum = await Gal.hasAccess(toAlbum: true);
       if (hasAccessToAlbum) {
         try {
-          await Gal.putImageBytes(Uint8List.fromList(imageData));
+          await Gal.putImageBytes(Uint8List.fromList(bytes));
           return true;
         } catch (e) {
           print(e);
