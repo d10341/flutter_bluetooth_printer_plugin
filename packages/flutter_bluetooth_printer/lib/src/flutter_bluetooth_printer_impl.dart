@@ -96,9 +96,9 @@ class FlutterBluetoothPrinter {
     // final File file = File('${directory.path}/my_file.jpg');
     // print(file.path);
     // file.writeAsBytes(Uint8List.fromList(bytes));
-    if (Platform.isIOS) {
-      await Gal.putImageBytes(Uint8List.fromList(bytes));
-    }
+    // if (Platform.isIOS) {
+    //   await Gal.putImageBytes(Uint8List.fromList(bytes));
+    // }
 
     return printBytes(
       keepConnected: keepConnected,

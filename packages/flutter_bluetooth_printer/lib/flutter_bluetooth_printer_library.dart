@@ -1,7 +1,6 @@
 library flutter_bluetooth_printer;
 
 import 'dart:async';
-import 'dart:io';
 //import 'dart:io';
 import 'dart:ui';
 
@@ -11,7 +10,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 import 'package:flutter_bluetooth_printer_platform_interface/flutter_bluetooth_printer_platform_interface.dart';
-import 'package:gal/gal.dart';
 //import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img;
 
