@@ -112,6 +112,48 @@ class FlutterBluetoothPrinter {
     );
   }
 
+  static Future getImage({
+    required String address,
+    required List<int> imageBytes,
+    required int imageWidth,
+    required int imageHeight,
+    PaperSize paperSize = PaperSize.mm58,
+    ProgressCallback? onProgress,
+    int addFeeds = 0,
+    bool useImageRaster = false,
+    required bool keepConnected,
+  }) async {
+    final bytes = await _optimizeImage(
+      paperSize: paperSize,
+      src: imageBytes,
+      srcWidth: imageWidth,
+      srcHeight: imageHeight,
+    );
+
+    img.Image src = img.decodeJpg(Uint8List.fromList(bytes))!;
+
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(
+      paperSize,
+      profile,
+      spaceBetweenRows: 0,
+    );
+    List<int> imageData;
+    if (useImageRaster) {
+      imageData = generator.imageRaster(
+        src,
+        highDensityHorizontal: true,
+        highDensityVertical: true,
+        imageFn: PosImageFn.bitImageRaster,
+        align: PosAlign.left,
+      );
+    } else {
+      imageData = generator.image(src);
+    }
+
+    return await Gal.putImageBytes(Uint8List.fromList(imageData));
+  }
+
   static Future<List<int>> _optimizeImage({
     required List<int> src,
     required PaperSize paperSize,

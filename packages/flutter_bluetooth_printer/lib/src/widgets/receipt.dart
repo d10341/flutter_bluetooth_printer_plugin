@@ -45,6 +45,24 @@ class ReceiptController with ChangeNotifier {
       keepConnected: keepConnected,
     );
   }
+
+  Future getImage({
+    required String address,
+    ProgressCallback? onProgress,
+
+    /// add lines after print
+    int linesAfter = 0,
+    bool useImageRaster = false,
+    bool keepConnected = false,
+  }) {
+    return _state.getImage(
+      address: address,
+      onProgress: onProgress,
+      addFeeds: linesAfter,
+      useImageRaster: useImageRaster,
+      keepConnected: keepConnected,
+    );
+  }
 }
 
 class Receipt extends StatefulWidget {
@@ -157,6 +175,37 @@ class ReceiptState extends State<Receipt> {
     final bytes = byteData!.buffer.asUint8List();
 
     await FlutterBluetoothPrinter.printImage(
+      address: address,
+      imageBytes: bytes,
+      imageWidth: image.width,
+      imageHeight: image.height,
+      paperSize: _paperSize,
+      onProgress: onProgress,
+      addFeeds: addFeeds,
+      useImageRaster: useImageRaster,
+      keepConnected: keepConnected,
+    ).then((value) {
+      if (value is BusyDeviceException) {
+        return 'BusyDevice';
+      }
+    });
+  }
+
+  Future getImage({
+    required String address,
+    ProgressCallback? onProgress,
+    int addFeeds = 0,
+    bool useImageRaster = false,
+    bool keepConnected = false,
+  }) async {
+    int quality = 4;
+    final RenderRepaintBoundary boundary =
+        _localKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: quality.toDouble());
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    final bytes = byteData!.buffer.asUint8List();
+
+    await FlutterBluetoothPrinter.getImage(
       address: address,
       imageBytes: bytes,
       imageWidth: image.width,
