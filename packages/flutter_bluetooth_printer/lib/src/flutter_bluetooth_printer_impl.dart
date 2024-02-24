@@ -149,7 +149,27 @@ class FlutterBluetoothPrinter {
       imageData = generator.image(src);
     }
 
-    return await Gal.putImageBytes(Uint8List.fromList(imageData));
+    // Check for access premission
+    final hasAccess = await Gal.hasAccess();
+
+    if (hasAccess) {
+      final hasAccessToAlbum = await Gal.hasAccess(toAlbum: true);
+      if (hasAccessToAlbum) {
+        try {
+          await Gal.putImageBytes(Uint8List.fromList(imageData));
+          return true;
+        } catch (e) {
+          print(e);
+        }
+      } else {
+        await Gal.requestAccess(toAlbum: true);
+      }
+    } else {
+      // Request access premission
+      await Gal.requestAccess();
+    }
+
+// ... for saving to album
   }
 
   static Future<List<int>> _optimizeImage({
