@@ -17,12 +17,10 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import java.io.InputStream;
-import java.io.Console;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,7 +55,7 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
         }
     };
     private MethodChannel channel;
-    private Activity activity = new Activity();
+    private Activity activity;
     private BluetoothAdapter bluetoothAdapter;
     private final BroadcastReceiver stateReceiver = new BroadcastReceiver() {
         @Override
@@ -119,18 +117,9 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
     private boolean ensurePermission(boolean request) {
         if (SDK_INT >= Build.VERSION_CODES.M) {
             if (SDK_INT >= 31) {
-                if (activity == null){return false;}
-                boolean bluetooth =false;
-                boolean bluetoothScan=false;
-                boolean bluetoothConnect=false;
-                try{
-                    bluetooth= activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
-                    bluetoothScan=  activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
-                    bluetoothConnect=  activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;}
-                catch (Exception e){
-
-                }
-
+                final boolean bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
+                final boolean bluetoothScan = activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
+                final boolean bluetoothConnect = activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
 
                 if (bluetooth && bluetoothScan && bluetoothConnect) {
                     return true;
@@ -146,18 +135,6 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                 boolean bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
                 boolean fineLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
                 boolean coarseLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                if (activity == null){return false;}
-                boolean bluetooth =false;
-                boolean fineLocation=false;
-                boolean coarseLocation=false;
-                try {
-                    bluetooth = activity.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
-                    fineLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                    coarseLocation = activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                }catch (Exception e){
-
-                }
-
 
                 if (bluetooth && (fineLocation || coarseLocation)) {
                     return true;
@@ -325,9 +302,6 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                                 updatePrintingProgress(data.length, 0);
 
                                 // req get printer status
-                                Log.d("log", "Printing....");
-                                Log.d("log", String.valueOf(data.length));
-
                                 writeStream.write(data);
                                 writeStream.flush();
 
@@ -337,32 +311,15 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
                                     inputStream.close();
                                     writeStream.close();
                                 }
-                                Log.i("log", "Complete printing, sleep");
-                                // waiting for printing completed
-                                long sleepTime = Math.round(Math.ceil((double)data.length/(double)5));
-                                if(sleepTime < 5000){
-                                    sleepTime = 5000;
-                                }
-
-                                Thread.sleep(sleepTime);
-                                Log.i("log", "Complete");
-
-                                writeStream.close();
-                                updatePrintingProgress(data.length, data.length);
-
 
                                 mainThread.post(() -> {
                                     // COMPLETED
-                                new Handler(Looper.getMainLooper()).post(() -> {
-                                    //
-
                                     channel.invokeMethod("didUpdateState", 3);
 
                                     // DONE
                                     result.success(true);
                                 });
-                            } catch (Exception e){  Log.e("blue_print_error", e.getMessage());}
-                            finally {
+                            } finally {
                                 if (!keepConnected) {
                                     bluetoothSocket.close();
                                     connectedDevices.remove(address);

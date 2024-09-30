@@ -48,6 +48,36 @@ class _ReceiptPageState extends State<ReceiptPage> {
                       fit: BoxFit.fitHeight,
                       height: 200,
                     ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
+                    Image.asset(
+                      'assets/logo.webp',
+                      fit: BoxFit.fitHeight,
+                      height: 200,
+                    ),
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxHeight: 36,

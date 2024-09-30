@@ -3,7 +3,7 @@ part of flutter_bluetooth_printer;
 class ReceiptController with ChangeNotifier {
   final ReceiptState _state;
 
-  PaperSize _paperSize = PaperSize.mm58;
+  PaperSize _paperSize = PaperSize.mm80;
   PaperSize get paperSize => _paperSize;
   set paperSize(PaperSize size) {
     _paperSize = size;
@@ -15,7 +15,6 @@ class ReceiptController with ChangeNotifier {
   }) : _state = state;
 
   Future<bool> print({
-  Future print({
     required String address,
     ProgressCallback? onProgress,
 
@@ -70,7 +69,7 @@ class Receipt extends StatefulWidget {
 
 class ReceiptState extends State<Receipt> {
   final _localKey = GlobalKey();
-  PaperSize _paperSize = PaperSize.mm58;
+  PaperSize _paperSize = PaperSize.mm80;
   late ReceiptController controller;
 
   @override
@@ -161,7 +160,6 @@ class ReceiptState extends State<Receipt> {
   }
 
   Future<bool> print({
-  Future print({
     required String address,
     ProgressCallback? onProgress,
     int addFeeds = 0,
@@ -191,28 +189,6 @@ class ReceiptState extends State<Receipt> {
       maxBufferSize: bytes.length,
       delayTime: delayTime,
     );
-  }
-}
-
-class _ImagePreviewForDebug extends StatelessWidget {
-  final Uint8List bytes;
-  const _ImagePreviewForDebug({
-    super.key,
-    required this.bytes,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Image Preview'),
-      ),
-      body: Image.memory(bytes),
-    ).then((value) {
-      if (value is BusyDeviceException) {
-        return 'BusyDevice';
-      }
-    });
   }
 
   Future getImage({
