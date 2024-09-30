@@ -5,11 +5,21 @@ class DiscoveryResult extends DiscoveryState {
   DiscoveryResult({required this.devices});
 }
 
-class FlutterBluetoothPrinter {
-  static void registerWith() {
-    FlutterBluetoothPrinterPlatform.instance = _MethodChannelBluetoothPrinter();
-  }
+enum PaperSize {
+  // original is 384 => 48 * 8
+  mm58(360, 58, 'Roll Paper 58mm');
 
+  final int width;
+  final double paperWidthMM;
+  final String name;
+  const PaperSize(
+    this.width,
+    this.paperWidthMM,
+    this.name,
+  );
+}
+
+class FlutterBluetoothPrinter {
   static Stream<DiscoveryState> _discovery() async* {
     final result = <BluetoothDevice>[];
     await for (final state
@@ -29,13 +39,25 @@ class FlutterBluetoothPrinter {
 
   static Stream<DiscoveryState> get discovery => _discovery();
 
+  static Future<bool> printBytes({
   static Future printBytes({
     required String address,
     required Uint8List data,
 
     /// if true, you should manually disconnect the printer after finished
     required bool keepConnected,
+    int maxBufferSize = 512,
+    int delayTime = 120,
     ProgressCallback? onProgress,
+  }) {
+    return FlutterBluetoothPrinterPlatform.instance.write(
+      address: address,
+      data: data,
+      onProgress: onProgress,
+      keepConnected: keepConnected,
+      maxBufferSize: maxBufferSize,
+      delayTime: delayTime,
+    );
   }) async {
     try {
       await FlutterBluetoothPrinterPlatform.instance.write(
@@ -49,17 +71,84 @@ class FlutterBluetoothPrinter {
     }
   }
 
+  static double calculatePrintingDurationInMilliseconds(
+    int heightInDots,
+    double printSpeed,
+    int dotsPerLine,
+    double paperWidth,
+    int dotsPerLineHeight,
+  ) {
+    // Calculate the number of lines
+    double numberOfLines = heightInDots / dotsPerLineHeight;
+
+    // Calculate lines per second
+    double linesPerSecond = printSpeed / paperWidth;
+
+    // Calculate the duration in seconds
+    double durationSeconds = numberOfLines / linesPerSecond;
+
+    // Convert the duration to milliseconds
+    double durationMilliseconds = durationSeconds * 1000;
+
+    return durationMilliseconds;
+  }
+
+  static Future<bool> printImageSingle({
   static Future printImage({
     required String address,
-    required List<int> imageBytes,
+    required Uint8List imageBytes,
     required int imageWidth,
     required int imageHeight,
     PaperSize paperSize = PaperSize.mm58,
     ProgressCallback? onProgress,
     int addFeeds = 0,
-    bool useImageRaster = false,
+    bool useImageRaster = true,
     required bool keepConnected,
+    int maxBufferSize = 512,
+    int delayTime = 120,
   }) async {
+    try {
+      final generator = Generator();
+      final reset = generator.reset();
+
+      final imageData = await generator.encode(
+        bytes: imageBytes,
+        dotsPerLine: paperSize.width,
+        useImageRaster: useImageRaster,
+      );
+
+      await _initialize(
+        address: address,
+      );
+
+      // waiting for printer initialized and buffers cleared
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      final additional = <int>[
+        for (int i = 0; i < addFeeds; i++) ...Commands.lineFeed,
+      ];
+
+      final printResult = await printBytes(
+        keepConnected: true,
+        address: address,
+        data: Uint8List.fromList([
+          ...imageData,
+          ...reset,
+          ...additional,
+        ]),
+        onProgress: onProgress,
+        maxBufferSize: maxBufferSize,
+        delayTime: delayTime,
+      );
+
+      return printResult;
+    } catch (e) {
+      return false;
+    } finally {
+      if (!keepConnected) {
+        await disconnect(address);
+      }
+    }
     final bytes = await _optimizeImage(
       paperSize: paperSize,
       src: imageBytes,
@@ -167,42 +256,21 @@ class FlutterBluetoothPrinter {
     return compute(_blackwhiteInternal, arg);
   }
 
-  static Future<List<int>> _blackwhiteInternal(Map<String, dynamic> arg) async {
-    final srcBytes = arg['src'] as List<int>;
-    final paperSize = arg['paperSize'] as PaperSize;
-
-    final bytes = Uint8List.fromList(srcBytes);
-    img.Image src = img.decodePng(bytes)!;
-
-    final w = src.width;
-    final h = src.height;
-
-    final res = img.Image(width: w, height: h);
-    for (int y = 0; y < h; ++y) {
-      for (int x = 0; x < w; ++x) {
-        final pixel = src.getPixel(x, y);
-
-        img.Color c;
-        final l = pixel.luminance / 255;
-        if (l > 0.8) {
-          c = img.ColorUint8.rgb(255, 255, 255);
-        } else {
-          c = img.ColorUint8.rgb(0, 0, 0);
-        }
-
-        res.setPixel(x, y, c);
-      }
+  static Future<bool> _initialize({
+    required String address,
+  }) async {
+    final isConnected = await connect(address);
+    if (!isConnected) {
+      return false;
     }
 
-    src = res;
-    final dotsPerLine = paperSize.width;
-    src = img.copyResize(
-      src,
-      width: dotsPerLine,
-      maintainAspect: true,
+    final generator = Generator();
+    final reset = generator.reset();
+    return printBytes(
+      address: address,
+      data: Uint8List.fromList(reset),
+      keepConnected: true,
     );
-
-    return img.encodeJpg(src);
   }
 
   static Future<BluetoothDevice?> selectDevice(BuildContext context) async {
@@ -218,5 +286,13 @@ class FlutterBluetoothPrinter {
 
   static Future<bool> disconnect(String address) async {
     return FlutterBluetoothPrinterPlatform.instance.disconnect(address);
+  }
+
+  static Future<bool> connect(String address) async {
+    return FlutterBluetoothPrinterPlatform.instance.connect(address);
+  }
+
+  static Future<BluetoothState> getState() async {
+    return FlutterBluetoothPrinterPlatform.instance.checkState();
   }
 }

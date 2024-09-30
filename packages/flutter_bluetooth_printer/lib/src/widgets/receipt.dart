@@ -1,19 +1,5 @@
 part of flutter_bluetooth_printer;
 
-extension PaperSizeName on PaperSize {
-  String get name {
-    if (this == PaperSize.mm58) {
-      return '58mm';
-    } else if (this == PaperSize.mm72) {
-      return '72mm';
-    } else if (this == PaperSize.mm80) {
-      return '80mm';
-    }
-
-    return 'Unknown';
-  }
-}
-
 class ReceiptController with ChangeNotifier {
   final ReceiptState _state;
 
@@ -28,21 +14,24 @@ class ReceiptController with ChangeNotifier {
     required ReceiptState state,
   }) : _state = state;
 
+  Future<bool> print({
   Future print({
     required String address,
     ProgressCallback? onProgress,
 
     /// add lines after print
-    int linesAfter = 0,
-    bool useImageRaster = false,
+    int addFeeds = 0,
     bool keepConnected = false,
+    int maxBufferSize = 512,
+    int delayTime = 120,
   }) {
     return _state.print(
       address: address,
       onProgress: onProgress,
-      addFeeds: linesAfter,
-      useImageRaster: useImageRaster,
+      addFeeds: addFeeds,
       keepConnected: keepConnected,
+      maxBufferSize: maxBufferSize,
+      delayTime: delayTime,
     );
   }
 
@@ -61,6 +50,7 @@ class ReceiptController with ChangeNotifier {
 
 class Receipt extends StatefulWidget {
   final WidgetBuilder builder;
+  final Widget Function(BuildContext context, Widget child)? containerBuilder;
   final Color backgroundColor;
   final TextStyle? defaultTextStyle;
   final void Function(ReceiptController controller) onInitialized;
@@ -71,6 +61,7 @@ class Receipt extends StatefulWidget {
     this.backgroundColor = Colors.grey,
     required this.builder,
     required this.onInitialized,
+    this.containerBuilder,
   }) : super(key: key);
 
   @override
@@ -87,7 +78,7 @@ class ReceiptState extends State<Receipt> {
     super.initState();
     controller = ReceiptController._(state: this);
     controller.addListener(_listener);
-    Future.microtask(() {
+    Future.delayed(const Duration(milliseconds: 100), () {
       widget.onInitialized(controller);
     });
   }
@@ -110,6 +101,39 @@ class ReceiptState extends State<Receipt> {
 
   @override
   Widget build(BuildContext context) {
+    const style = TextStyle(
+      fontSize: 24,
+      height: 1.0,
+      color: Colors.black,
+      fontFeatures: [
+        FontFeature.slashedZero(),
+      ],
+    );
+
+    var receipt = RepaintBoundary(
+      key: _localKey,
+      child: Container(
+        color: Colors.white,
+        child: DefaultTextStyle.merge(
+          style: style.merge(
+            widget.defaultTextStyle ??
+                const TextStyle(
+                  fontFamily: 'Receipt',
+                  package: 'flutter_bluetooth_printer',
+                ),
+          ),
+          child: SizedBox(
+            width: _paperSize.width.toDouble(),
+            child: Builder(builder: widget.builder),
+          ),
+        ),
+      ),
+    );
+
+    if (widget.containerBuilder != null) {
+      return widget.containerBuilder!(context, receipt);
+    }
+
     return Container(
       color: widget.backgroundColor,
       child: ClipRect(
@@ -126,25 +150,7 @@ class ReceiptState extends State<Receipt> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   color: Colors.white,
-                  child: RepaintBoundary(
-                    key: _localKey,
-                    child: Container(
-                      color: Colors.white,
-                      child: DefaultTextStyle.merge(
-                        style: const TextStyle(
-                          fontSize: 24,
-                          height: 1.1,
-                          color: Colors.black,
-                          fontFamily: 'HermeneusOne',
-                          package: 'flutter_bluetooth_printer',
-                        ).merge(widget.defaultTextStyle),
-                        child: SizedBox(
-                          width: _paperSize.width.toDouble(),
-                          child: Builder(builder: widget.builder),
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: receipt,
                 ),
               ),
             ),
@@ -154,21 +160,26 @@ class ReceiptState extends State<Receipt> {
     );
   }
 
+  Future<bool> print({
   Future print({
     required String address,
     ProgressCallback? onProgress,
     int addFeeds = 0,
-    bool useImageRaster = false,
     bool keepConnected = false,
+    int maxBufferSize = 512,
+    int delayTime = 120,
   }) async {
-    int quality = 4;
     final RenderRepaintBoundary boundary =
         _localKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: quality.toDouble());
-    final byteData = await image.toByteData(format: ImageByteFormat.png);
-    final bytes = byteData!.buffer.asUint8List();
 
-    await FlutterBluetoothPrinter.printImage(
+    final screenWidth = boundary.size.width;
+    double quality = _paperSize.width / screenWidth;
+
+    final image = await boundary.toImage(pixelRatio: quality);
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    var bytes = byteData!.buffer.asUint8List();
+
+    return FlutterBluetoothPrinter.printImageSingle(
       address: address,
       imageBytes: bytes,
       imageWidth: image.width,
@@ -176,8 +187,27 @@ class ReceiptState extends State<Receipt> {
       paperSize: _paperSize,
       onProgress: onProgress,
       addFeeds: addFeeds,
-      useImageRaster: useImageRaster,
       keepConnected: keepConnected,
+      maxBufferSize: bytes.length,
+      delayTime: delayTime,
+    );
+  }
+}
+
+class _ImagePreviewForDebug extends StatelessWidget {
+  final Uint8List bytes;
+  const _ImagePreviewForDebug({
+    super.key,
+    required this.bytes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Image Preview'),
+      ),
+      body: Image.memory(bytes),
     ).then((value) {
       if (value is BusyDeviceException) {
         return 'BusyDevice';
