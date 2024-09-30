@@ -301,15 +301,40 @@ public class FlutterBluetoothPrinterPlugin implements FlutterPlugin, ActivityAwa
 
                                 updatePrintingProgress(data.length, 0);
 
-                                // req get printer status
-                                writeStream.write(data);
-                                writeStream.flush();
+                                // // req get printer status
+                                // writeStream.write(data);
+                                // writeStream.flush();
 
-                                updatePrintingProgress(data.length, data.length);
+                                // updatePrintingProgress(data.length, data.length);
 
-                                if (!keepConnected) {
-                                    inputStream.close();
-                                    writeStream.close();
+                                // if (!keepConnected) {
+                                //     inputStream.close();
+                                //     writeStream.close();
+                                // }
+
+                                int totalLength = data.length;
+                                int bytesSent = 0;
+                                int chunkSize = 1024; // Adjust the chunk size as needed
+
+                                // Send data in chunks
+                                while (bytesSent < totalLength) {
+                                    int bytesToSend = Math.min(chunkSize, totalLength - bytesSent);
+                                    writeStream.write(data, bytesSent, bytesToSend);
+                                    writeStream.flush();
+                                    bytesSent += bytesToSend;
+
+                                    Log.d("ProgressDebug", "Bytes Sent: " + bytesSent + "/" + totalLength);
+
+                                    // Ensure final update
+                                    if (bytesSent >= totalLength) {
+                                        mainThread.post(() -> updatePrintingProgress(totalLength, totalLength));
+                                    }else{
+                                        // Update progress
+                                        int finalBytesSent = bytesSent;
+                                        mainThread.post(() -> updatePrintingProgress(totalLength, finalBytesSent));
+                                    }
+                                    Thread.sleep(100);
+
                                 }
 
                                 mainThread.post(() -> {
